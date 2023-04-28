@@ -31,16 +31,52 @@ export default class Keyboard {
     // будет указывать на экземпляр класса при down
     this.#inputElementKeyUpBound = this.#inputElementKeyUp.bind(this); // гарантирует что this
     // будет привязан на экземпляр класса при событие up
-    this.#specialKeys.ShiftLeft = () => {
+
+    const holdShiftKey = () => {
       this.#shiftKey = true;
-      this.#activateKey('ShiftLeft');
       this.#refreshKeyLabels();
     };
-    this.#specialKeys.ShiftRight = () => {
-      this.#shiftKey = true;
-      this.#activateKey('ShiftRight');
-      this.#refreshKeyLabels();
+    this.#addSpecialKey('ShiftLeft', holdShiftKey);
+    this.#addSpecialKey('ShiftRight', holdShiftKey);
+
+    const holdControlKey = () => {
+      this.#ctrlKey = true;
     };
+    this.#addSpecialKey('ControlLeft', holdControlKey);
+    this.#addSpecialKey('ControlRight', holdControlKey);
+
+    const holdAltKey = () => {
+      this.#altKey = true;
+    };
+    this.#addSpecialKey('AltLeft', holdAltKey);
+    this.#addSpecialKey('AltRight', holdAltKey);
+
+    const holdMetaKey = () => {
+      this.#metaKey = true;
+    };
+    this.#addSpecialKey('MetaLeft', holdMetaKey);
+    this.#addSpecialKey('MetaRight', holdMetaKey);
+
+    this.#addSpecialKey('Backspace', () => {
+      this.#inputElement.dispatchEvent(new KeyboardEvent('down', { isTrusted: true, code: 'Backspace' }));
+      const text = this.#inputElement.value;
+      const selection = this.#inputElement.selectionStart;
+      if (selection > 0) {
+        this.#inputElement.value = `${text.slice(0, selection - 1) ?? ''}${text.slice(selection) ?? ''}`;
+        this.#inputElement.focus();
+        this.#inputElement.selectionEnd = selection - 1;
+        this.#inputElement.selectionStart = selection - 1;
+      }
+      setTimeout(() => {
+        this.#deActivateKey('Backspace');
+      }, 100);
+    });
+    this.#addSpecialKey('ArrowDown', () => {
+      const event = document.createEvent('Events');
+      event.initEvent('keydown', true, true);
+      event.which = 40;
+      this.#inputElement.dispatchEvent(event);
+    });
   }
 
   bind(inputElement) { // если уже был привязанный элемент
@@ -85,25 +121,40 @@ export default class Keyboard {
     this.#refreshKeyLabels();
   }
 
+  #addSpecialKey(code, handler) {
+    this.#specialKeys[code] = () => {
+      this.#activateKey(code);
+      handler();
+    };
+  }
+
   #type(key) { // функция которая печатает
-    if (this.#altKey || this.#ctrlKey || this.#metaKey) { // обработка клавиатурных сочетаний - их не печатает
-      return;
-    }
     if (this.#specialKeys[key.code]) { // если специальная клавиша
       this.#specialKeys[key.code](); // то вызываем код связанный с этой специальной клавишей
       return;
     }
     // для всех остальных клавиш вызовется следующий код
-    const keyToType = this.#shiftKey // зажат ли shift?
-      ? (key.shift ?? key.key ?? key).toUpperCase() // если зажат берем клавишу - знаки у цифр, если просто буква приводит в upperCase
-      : (key.key ?? key); // иначе если не зажат shift
-    this.#inputElement.value += keyToType; // добавляем к тексту в инпут этот символ который надо напечатать
+    if (!this.#altKey && !this.#ctrlKey && !this.#metaKey) { // обработка клавиатурных сочетаний - их не печатает
+      const keyToType = this.#shiftKey // зажат ли shift?
+        ? (key.shift ?? key.key ?? key).toUpperCase() // если зажат берем клавишу - знаки у цифр, если просто буква приводит в upperCase
+        : (key.key ?? key); // иначе если не зажат shift
+      this.#inputElement.value += keyToType; // добавляем к тексту в инпут этот символ который надо напечатать
+      const code = key.code ?? `Key${(key.key ?? key).toUpperCase()}`;
+      this.#activateKey(code);
+      setTimeout(() => {
+        this.#deActivateKey(code);
+      }, 100);
+    }
     if (this.#shiftKey) { // если все-таки шифт зажат на виртуальной клавиатуре то мы его сбрасываем
       this.#shiftKey = false;
       this.#refreshKeyLabels(); // обновляются upper на lower case или наоборот
-      this.#deActivateKey('ShiftLeft'); // убирает класс active у обоих кнопок
-      this.#deActivateKey('ShiftRight');
     }
+    this.#altKey = false;
+    this.#ctrlKey = false;
+    this.#metaKey = false;
+    Object.keys(this.#specialKeys).forEach((code) => {
+      this.#deActivateKey(code); // убирает класс active у обоих кнопок
+    });
   }
 
   // обработчики нажатий виртуальной клавиатуры

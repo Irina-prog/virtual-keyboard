@@ -25,6 +25,8 @@ export default class Keyboard {
 
   #metaKey = false;
 
+  #capsKey = false;
+
   constructor(parent) {
     this.#parent = parent;
     this.#inputElementKeyDownBound = this.#inputElementKeyDown.bind(this); // гарантирует что this
@@ -32,11 +34,11 @@ export default class Keyboard {
     this.#inputElementKeyUpBound = this.#inputElementKeyUp.bind(this); // гарантирует что this
     // будет привязан на экземпляр класса при событие up
 
-    const holdShiftKey = () => {
-      this.#shiftKey = !this.#shiftKey;
-      this.#refreshKeyLabels();
-      if (!this.#shiftKey) {
-        this.#deActivateKey('ShiftLeft');
+    const holdShiftKey = () => { // обработка нажатий шифта на виртуальной клаве
+      this.#shiftKey = !this.#shiftKey; // статус меняем на противоположный
+      this.#refreshKeyLabels(); // обновляем кнопочки
+      if (!this.#shiftKey) { // если сняли шифт
+        this.#deActivateKey('ShiftLeft'); // снимае
         this.#deActivateKey('ShiftRight');
       }
     };
@@ -67,23 +69,19 @@ export default class Keyboard {
       const selection = this.#inputElement.selectionStart;
       if (selection > 0) {
         this.#inputElement.value = `${text.slice(0, selection - 1) ?? ''}${text.slice(selection) ?? ''}`;
-        this.#inputElement.focus();
         this.#inputElement.selectionEnd = selection - 1;
         this.#inputElement.selectionStart = selection - 1;
       }
     }, true);
     this.#addSpecialKey('ArrowLeft', () => {
-      this.#inputElement.focus();
       this.#inputElement.selectionStart -= 1;
       this.#inputElement.selectionEnd = this.#inputElement.selectionStart;
     }, true);
     this.#addSpecialKey('ArrowRight', () => {
-      this.#inputElement.focus();
       this.#inputElement.selectionStart += 1;
       this.#inputElement.selectionEnd = this.#inputElement.selectionStart;
     }, true);
     this.#addSpecialKey('ArrowDown', () => {
-      this.#inputElement.focus();
       const nextLineLength = this.#getNextLineLength();
       if (nextLineLength >= 0) {
         this.#inputElement.selectionStart
@@ -93,7 +91,6 @@ export default class Keyboard {
       }
     }, true);
     this.#addSpecialKey('ArrowUp', () => {
-      this.#inputElement.focus();
       const previousLineLength = this.#getPreviousLineLength();
       if (previousLineLength >= 0) {
         this.#inputElement.selectionStart
@@ -104,13 +101,19 @@ export default class Keyboard {
       }
     }, true);
     this.#addSpecialKey('Tab', () => {
-      this.#inputElement.focus();
       this.#inputElement.value += '\t';
     }, true);
     this.#addSpecialKey('Enter', () => {
-      this.#inputElement.focus();
       this.#inputElement.value += '\n';
     }, true);
+    const holdCapsLocktKey = () => {
+      this.#capsKey = !this.#capsKey;
+      this.#refreshKeyLabels(); // обновляем кнопочки
+      if (!this.#capsKey) { // если сняли
+        this.#deActivateKey('CapsLock');
+      }
+    };
+    this.#addSpecialKey('CapsLock', holdCapsLocktKey);
   }
 
   bind(inputElement) { // если уже был привязанный элемент
@@ -134,7 +137,7 @@ export default class Keyboard {
       const rowElement = document.createElement('div'); // строчки
       rowElement.classList.add('keyboard-row'); // класса
       rowElement.append(...row.map((key, j) => { // отрисовываются кнопки для каждой строки
-        const keyElement = document.createElement('button');
+        const keyElement = document.createElement('div');
         keyElement.classList.add('keyboard-key');
         keyElement.setAttribute('id', key.code ?? `Key${(engRows[i][j].key ?? engRows[i][j]).toUpperCase()}`);
         // key у объекта - берется он, если нет то просто key
@@ -167,22 +170,30 @@ export default class Keyboard {
     };
   }
 
+  #isUpperCaseRequired() {
+    return (this.#capsKey && !this.#shiftKey) || (!this.#capsKey && this.#shiftKey);
+  }
+
   #type(key) { // функция которая печатает
+    this.#inputElement.focus();
     if (this.#specialKeys[key.code]) { // если специальная клавиша
       this.#specialKeys[key.code](); // то вызываем код связанный с этой специальной клавишей
       return;
     }
     // для всех остальных клавиш вызовется следующий код
-    if (!this.#altKey && !this.#ctrlKey && !this.#metaKey) { // обработка клавиатурных сочетаний - их не печатает
-      const keyToType = this.#shiftKey // зажат ли shift?
-        ? (key.shift ?? key.key ?? key).toUpperCase() // если зажат берем клавишу - знаки у цифр, если просто буква приводит в upperCase
+    if (!this.#altKey && !this.#ctrlKey && !this.#metaKey) { // обработка клавиатурных сочетаний
+      // - их не печатает
+      const keyToType = this.#isUpperCaseRequired() // зажат ли shift?
+        ? (key.shift ?? key.key ?? key).toUpperCase() // если зажат берем клавишу
+        // - знаки у цифр, если просто буква приводит в upperCase
         : (key.key ?? key); // иначе если не зажат shift
-      this.#inputElement.value += keyToType; // добавляем к тексту в инпут этот символ который надо напечатать
+      this.#inputElement.value += keyToType; // добавляем к тексту в инпут
+      // этот символ который надо напечатать
       const code = key.code ?? `Key${(key.key ?? key).toUpperCase()}`;
       this.#activateKey(code);
       setTimeout(() => {
         this.#deActivateKey(code);
-      }, 100);
+      }, 50);
     }
     if (this.#shiftKey) { // если все-таки шифт зажат на виртуальной клавиатуре то мы его сбрасываем
       this.#shiftKey = false;
@@ -191,7 +202,7 @@ export default class Keyboard {
     this.#altKey = false;
     this.#ctrlKey = false;
     this.#metaKey = false;
-    Object.keys(this.#specialKeys).forEach((code) => {
+    Object.keys(this.#specialKeys).filter((code) => code !== 'CapsLock').forEach((code) => {
       this.#deActivateKey(code); // убирает класс active у обоих кнопок
     });
   }
@@ -214,6 +225,15 @@ export default class Keyboard {
     this.#altKey = e?.altKey ?? false;
     this.#shiftKey = e?.shiftKey ?? false;
     this.#metaKey = e?.metaKey ?? false;
+    if (e) { // обработка аппаратного capslock
+      this.#capsKey = e.getModifierState('CapsLock'); // метод у клавиатурных событий - дает true или false
+      // получает состояние клавиши capsLock
+      if (this.#capsKey) { // если физически capsLock зажат
+        this.#activateKey('CapsLock'); // подсветить клавиатуру
+      } else { // если не зажат
+        this.#deActivateKey('CapsLock'); // то снять подсветку
+      }
+    }
   }
 
   #activateKey(code) {
@@ -236,8 +256,11 @@ export default class Keyboard {
       for (let j = 0; j < keyElements.length; j += 1) {
         const keyElement = keyElements[j];
         const key = keys[j];
-        keyElement.innerText = this.#shiftKey
-          ? (key.shift ?? key.key ?? key).toUpperCase()
+        const upperCaseKey = (this.#specialKeys[key.code]
+          ? key.key
+          : (key.shift ?? key.key ?? key).toUpperCase());
+        keyElement.innerText = this.#isUpperCaseRequired()
+          ? upperCaseKey
           : (key.key ?? key);
       }
     });

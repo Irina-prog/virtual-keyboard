@@ -4,4 +4,7 @@
   white-space: pre;
   overflow-wrap: normal;
   overflow-x: scroll;
+  width: 600px;
+  margin: 50px auto;
+  display: block;
 }

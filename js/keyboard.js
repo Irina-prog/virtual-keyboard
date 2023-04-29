@@ -33,8 +33,12 @@ export default class Keyboard {
     // будет привязан на экземпляр класса при событие up
 
     const holdShiftKey = () => {
-      this.#shiftKey = true;
+      this.#shiftKey = !this.#shiftKey;
       this.#refreshKeyLabels();
+      if (!this.#shiftKey) {
+        this.#deActivateKey('ShiftLeft');
+        this.#deActivateKey('ShiftRight');
+      }
     };
     this.#addSpecialKey('ShiftLeft', holdShiftKey);
     this.#addSpecialKey('ShiftRight', holdShiftKey);
@@ -67,16 +71,46 @@ export default class Keyboard {
         this.#inputElement.selectionEnd = selection - 1;
         this.#inputElement.selectionStart = selection - 1;
       }
-      setTimeout(() => {
-        this.#deActivateKey('Backspace');
-      }, 100);
-    });
+    }, true);
+    this.#addSpecialKey('ArrowLeft', () => {
+      this.#inputElement.focus();
+      this.#inputElement.selectionStart -= 1;
+      this.#inputElement.selectionEnd = this.#inputElement.selectionStart;
+    }, true);
+    this.#addSpecialKey('ArrowRight', () => {
+      this.#inputElement.focus();
+      this.#inputElement.selectionStart += 1;
+      this.#inputElement.selectionEnd = this.#inputElement.selectionStart;
+    }, true);
     this.#addSpecialKey('ArrowDown', () => {
-      const event = document.createEvent('Events');
-      event.initEvent('keydown', true, true);
-      event.which = 40;
-      this.#inputElement.dispatchEvent(event);
-    });
+      this.#inputElement.focus();
+      const nextLineLength = this.#getNextLineLength();
+      if (nextLineLength >= 0) {
+        this.#inputElement.selectionStart
+        += (this.#getCurrentLineLength() - this.#getCursorPositionFromBeginOfLine())
+        + Math.min(nextLineLength, this.#getCursorPositionFromBeginOfLine()) + 1;
+        this.#inputElement.selectionEnd = this.#inputElement.selectionStart;
+      }
+    }, true);
+    this.#addSpecialKey('ArrowUp', () => {
+      this.#inputElement.focus();
+      const previousLineLength = this.#getPreviousLineLength();
+      if (previousLineLength >= 0) {
+        this.#inputElement.selectionStart
+        -= this.#getCursorPositionFromBeginOfLine()
+        + previousLineLength
+        - Math.min(previousLineLength, this.#getCursorPositionFromBeginOfLine()) + 1;
+        this.#inputElement.selectionEnd = this.#inputElement.selectionStart;
+      }
+    }, true);
+    this.#addSpecialKey('Tab', () => {
+      this.#inputElement.focus();
+      this.#inputElement.value += '\t';
+    }, true);
+    this.#addSpecialKey('Enter', () => {
+      this.#inputElement.focus();
+      this.#inputElement.value += '\n';
+    }, true);
   }
 
   bind(inputElement) { // если уже был привязанный элемент
@@ -121,10 +155,15 @@ export default class Keyboard {
     this.#refreshKeyLabels();
   }
 
-  #addSpecialKey(code, handler) {
+  #addSpecialKey(code, handler, deativateAfter = false) {
     this.#specialKeys[code] = () => {
       this.#activateKey(code);
       handler();
+      if (deativateAfter) {
+        setTimeout(() => {
+          this.#deActivateKey(code);
+        }, 50);
+      }
     };
   }
 
@@ -202,5 +241,37 @@ export default class Keyboard {
           : (key.key ?? key);
       }
     });
+  }
+
+  #getCursorPositionFromBeginOfLine() {
+    const index = this.#inputElement.value.lastIndexOf('\n', this.#inputElement.selectionStart);
+    return this.#inputElement.selectionStart - (index + 1);
+  }
+
+  #getPreviousLineLength() {
+    const end = this.#inputElement.value.lastIndexOf('\n', this.#inputElement.selectionStart - 1);
+    const start = this.#inputElement.value.lastIndexOf('\n', end - 1);
+    return end - start - 1;
+  }
+
+  #getNextLineLength() {
+    let start = this.#inputElement.value.indexOf('\n', this.#inputElement.selectionStart);
+    if (start < 0) {
+      start = this.#inputElement.value.length;
+    }
+    let end = this.#inputElement.value.indexOf('\n', start + 1);
+    if (end < 0) {
+      end = this.#inputElement.value.length;
+    }
+    return end - start - 1;
+  }
+
+  #getCurrentLineLength() {
+    const start = this.#inputElement.value.lastIndexOf('\n', this.#inputElement.selectionStart - 1);
+    let end = this.#inputElement.value.indexOf('\n', this.#inputElement.selectionStart);
+    if (end < 0) {
+      end = this.#inputElement.value.length;
+    }
+    return end - start - 1;
   }
 }

@@ -1,1 +1,7 @@
 @import url(./keyboard.css);
+
+#demo-input {
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: scroll;
+}

@@ -217,7 +217,7 @@ export default class Keyboard {
       return;
     }
     if (!layouts[layout]) {
-      throw new Error(`ой-йо-ой нет лэйаута ${layout}`);
+      throw new Error(`нет лэйаута ${layout}`);
     }
     this.#layout = layout;
     this.#refreshKeyLabels();
@@ -310,20 +310,25 @@ export default class Keyboard {
     }
   }
 
+  // подсветить клавишу с указанным кодом
   #activateKey(code) {
     this.#container?.querySelector(`#${code}`)?.classList?.add('active');
   }
 
+  // убрать подсветку с клавиши с указанным кодом
   #deActivateKey(code) {
     this.#container?.querySelector(`#${code}`)?.classList?.remove('active');
   }
 
+  // обновить надписи на клавишах
   #refreshKeyLabels() {
-    const rowElements = [...this.#container?.querySelectorAll('.keyboard-row') ?? null];
+    const rowElements = [...this.#container?.querySelectorAll('.keyboard-row') ?? null]; // разворачиваем чтобы получить массив
+    // элементов который возвращает querySelectorAll
     const rows = layouts[this.#layout]; // подгружается из файла layouts.js
     if (rowElements.length !== rows.length) {
-      return;
+      throw new Error('не совпадает количество строк');
     }
+    // перерисовываем буковки на кнопках
     rowElements.forEach((rowElement, i) => {
       const keyElements = rowElement.querySelectorAll('.keyboard-key');
       const keys = rows[i];

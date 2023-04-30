@@ -213,6 +213,9 @@ export default class Keyboard {
   }
 
   changeLayout(layout) {
+    if (this.#layout === layout) {
+      return;
+    }
     if (!layouts[layout]) {
       throw new Error(`ой-йо-ой нет лэйаута ${layout}`);
     }

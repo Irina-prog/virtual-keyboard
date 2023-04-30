@@ -20,9 +20,11 @@ function start() {
   // на изменение языка раскладки отрисовать значение языка
   keyboard.onlayoutchange = (layout) => {
     languageElement.textContent = layout;
+    sessionStorage.setItem('layout', layout);
   };
   // обращение к cвойству layout чтобы получить текущую раскладку
-  languageElement.textContent = keyboard.layout;
+  languageElement.textContent = sessionStorage.getItem('layout') ?? keyboard.layout;
+  keyboard.changeLayout(languageElement.textContent);
 }
 
 document.addEventListener('DOMContentLoaded', start);

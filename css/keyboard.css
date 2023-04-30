@@ -3,6 +3,7 @@ body {
 }
 .keyboard-container .keyboard-key.active {
   background-color: yellow; 
+  transition: all 100ms ease-out;
 }
 .keyboard-container {
   width: 600px;

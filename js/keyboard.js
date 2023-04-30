@@ -29,6 +29,8 @@ export default class Keyboard {
 
   #capsKey = false;
 
+  onlayoutchange = null;
+
   constructor(parent) { // в конструктор передается элемент
     // где будет отображаться виртуальная клавиатура
     this.#parent = parent;
@@ -216,6 +218,12 @@ export default class Keyboard {
     }
     this.#layout = layout;
     this.#refreshKeyLabels();
+    this.onlayoutchange?.(this.#layout);
+  }
+
+  // cвойство доступное только на чтение
+  get layout() {
+    return this.#layout;
   }
 
   // добавляет обработчик для специальной клавиши
@@ -226,8 +234,8 @@ export default class Keyboard {
       handler(); // функция которая обрабатывает нажатие клавиши
       if (deativateAfter) { // если третий паметр true то
         setTimeout(() => {
-          this.#deActivateKey(code); // снять active класс через 50 мс
-        }, 50);
+          this.#deActivateKey(code); // снять active класс через 200 мс
+        }, 200);
       }
     };
   }
@@ -256,7 +264,7 @@ export default class Keyboard {
       this.#activateKey(code);
       setTimeout(() => {
         this.#deActivateKey(code);
-      }, 50);
+      }, 200);
     }
     if (this.#shiftKey) { // если все-таки шифт зажат на виртуальной клавиатуре то мы его сбрасываем
       this.#shiftKey = false;

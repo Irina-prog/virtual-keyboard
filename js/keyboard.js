@@ -98,6 +98,21 @@ export default class Keyboard {
       }
     }, true);
 
+    // обработка delete
+    this.#addSpecialKey('Delete', () => { // добавляется  в объект специальных клавиш
+      const text = this.#inputElement.value; // сохраняется весь текст из инпута в переменную
+      const selection = this.#inputElement.selectionStart; // определяем позицию курсора
+      if (selection < text.length) { // если позиция не в самом конце
+        // формируем текст без следующего символа
+        this.#inputElement.value = `${text.slice(0, selection) ?? ''}${text.slice(selection + 1) ?? ''}`;
+        //  возвращает курсор в прежднее положение
+        this.#inputElement.selectionEnd = selection;
+        // чтобы не было выделенного текста в selectionStart и
+        // selectionEnd должны хранить одно и тоже значение
+        this.#inputElement.selectionStart = selection;
+      }
+    }, true);
+
     // обработка стрелок
     this.#addSpecialKey('ArrowLeft', () => {
       this.#inputElement.selectionStart -= 1; // смещаем влево курсор

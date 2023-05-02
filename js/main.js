@@ -12,6 +12,11 @@ function start() {
   languageElement.classList.add('demo-language');
   body.append(languageElement);
 
+  const comments = document.createElement('p');
+  comments.classList.add('instruction');
+  comments.textContent = `чтобы переключить раскладку нажмите кнопку lang (Fn на Mac OS)`
+  body.append(comments);
+
   const keyboard = new Keyboard(body);
   keyboard.bind(inputElement);
   inputElement.focus();
@@ -25,6 +30,8 @@ function start() {
   // обращение к cвойству layout чтобы получить текущую раскладку
   languageElement.textContent = sessionStorage.getItem('layout') ?? keyboard.layout;
   keyboard.changeLayout(languageElement.textContent);
+
+  
 }
 
 document.addEventListener('DOMContentLoaded', start);

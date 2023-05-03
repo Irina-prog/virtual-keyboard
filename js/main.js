@@ -30,8 +30,6 @@ function start() {
   // обращение к cвойству layout чтобы получить текущую раскладку
   languageElement.textContent = sessionStorage.getItem('layout') ?? keyboard.layout;
   keyboard.changeLayout(languageElement.textContent);
-
-  
 }
 
 document.addEventListener('DOMContentLoaded', start);

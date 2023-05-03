@@ -248,7 +248,7 @@ export default class Keyboard {
   }
 
   #type(i, j) { // функция которая печатает
-    const key = layouts[this.#layout][i][j];
+    let key = layouts[this.#layout][i][j];
     this.#inputElement.focus();
     if (this.#specialKeys[key.code]) { // если специальная клавиша
       this.#specialKeys[key.code](); // то вызываем код связанный с этой специальной клавишей
@@ -263,6 +263,7 @@ export default class Keyboard {
         : (key.key ?? key); // иначе если не зажат shift
       this.#inputElement.value += keyToType; // добавляем к тексту в инпут
       // этот символ который надо напечатать
+      key = layouts.en[i][j];
       const code = key.code ?? `Key${(key.key ?? key).toUpperCase()}`;
       this.#activateKey(code);
       setTimeout(() => {
